@@ -1,0 +1,115 @@
+
+#include <AccelStepper.h>
+#include <elapsedMillis.h>
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include "HX711.h"
+
+
+elapsedMillis myTime, beepMillis;
+
+#define irLeft1 7
+#define irRight1 6
+
+#define hallSensor1 5
+#define hallSensor2 4
+#define hallSensor3 48
+#define hallSensor4 47
+
+
+
+#define leftMotPul 17
+#define leftMotDir 18
+#define leftMotEna 16
+
+#define rightMotPul 14
+#define rightMotDir 13
+#define rightMotEna 15
+
+
+#define sensTrig 12
+#define sensEco 11
+#define speakerPin 45
+
+#define turnTime 300
+
+#define touchRight 21
+#define touchLeft 19
+#define touchOk 20
+
+#define sensorLogic 0
+#define moveSpeed 3500
+#define stopDistance 40
+#define sensorUpdateTime 1000
+#define volume 2
+#define documentWeight 8
+#define accleration 8000
+
+#define hallSensorLogic 0
+#define hallReadSteps 10
+
+#define touchSensorLogic 1
+
+HX711 scale;
+AccelStepper leftStepper(AccelStepper::DRIVER, leftMotPul, leftMotDir);
+AccelStepper rightStepper(AccelStepper::DRIVER, rightMotPul, rightMotDir);
+
+uint8_t dataPin = 38;
+uint8_t clockPin = 39;
+
+String lcdMenu[] = { "301-B SPL", "312 LCS", "301-A IoT Lab", "323 XEROX Center", "302 Network Lab", "303 Programming Lab", "311 Classroom", "304 Software Lab", "306 DepartmentOffice", "309 Classroom", "310 Classroom" };
+
+int state = 4;
+int lcdElement = 0;
+long resetPos = 0;
+
+LiquidCrystal_I2C lcd(0x27, 20, 4);
+
+float currentDistance = 0, currentWeight = 0;
+bool beepState = 1, beep = 0, hall1Val = !hallSensorLogic, hall2Val = !hallSensorLogic, hall3Val = !hallSensorLogic, hall4Val = !hallSensorLogic, destHall1Val = hallSensorLogic, destHall2Val = hallSensorLogic, destHall3Val = hallSensorLogic, destHall4Val = hallSensorLogic, trl = 0, tll = 0;
+
+
+void followPath() {
+  if ((currentWeight > documentWeight) && (digitalRead(sensEco) == HIGH) && (digitalRead(sensEco) == HIGH)) {
+    beep = 0;
+
+    if (digitalRead(irLeft1) == sensorLogic) {
+      digitalWrite(rightMotEna, LOW);
+      rightStepper.moveTo(2147483600);
+    } else {
+      rightStepper.moveTo(rightStepper.currentPosition());
+    }
+
+    if (digitalRead(irRight1) == sensorLogic) {
+      digitalWrite(leftMotEna, LOW);
+      leftStepper.moveTo(2147483600);
+    } else {
+      leftStepper.moveTo(leftStepper.currentPosition());
+    }
+
+  } else {
+    digitalWrite(leftMotEna, HIGH);
+    digitalWrite(rightMotEna, HIGH);
+    leftStepper.moveTo(leftStepper.currentPosition());
+    rightStepper.moveTo(rightStepper.currentPosition());
+    beep = 1;
+  }
+
+  if ((digitalRead(touchOk) == touchSensorLogic) && (digitalRead(touchLeft) == touchSensorLogic) && (digitalRead(touchRight) == touchSensorLogic)) {
+    state = 4;
+    lcdElement = 0;
+    lcd.clear();
+    lcd.backlight();
+    lcd.setCursor(0, 0);
+    lcd.print("Please Select ");
+    lcd.setCursor(0, 1);
+    lcd.print("Destination");
+    lcd.setCursor(0, 2);
+    lcd.print(lcdMenu[lcdElement]);
+    digitalWrite(leftMotEna, HIGH);
+    digitalWrite(rightMotEna, HIGH);
+    leftStepper.moveTo(leftStepper.currentPosition());
+    rightStepper.moveTo(rightStepper.currentPosition());
+    delay(2000);
+  }
+}
